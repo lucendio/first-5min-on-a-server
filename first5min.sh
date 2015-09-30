@@ -7,6 +7,7 @@
 ################################################################################
 ROOT_USER_ALTERNATIVE="superuser"
 SSH_PORT=4422
+LANG_SET="en_US.UTF-8"
 
 SSHD_CONFIG="/etc/ssh/sshd_config"
 
@@ -34,7 +35,12 @@ SSHD_CONFIG="/etc/ssh/sshd_config"
 # running as root or not
 if [ $(id -u) -eq 0 ]; then
     echo "(1) change root pw (unset on fresh ubuntu instances)"
-    #passwd
+    passwd
+
+    export LANGUAGE=${LANG_SET}
+    export LANG=${LANG_SET}
+    export LC_ALL=${LANG_SET}
+    locale-gen ${LANG_SET}
 else
     echo "TODO: switch to root and try to run this script again (-> aborted)"
     exit 1
@@ -51,9 +57,9 @@ echo "(2) create new users"
 echo "==> ${ROOT_USER_ALTERNATIVE}: "
 adduser "${ROOT_USER_ALTERNATIVE}" --shell /bin/bash --gecos ""
 echo "" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
-echo "LANGUAGE=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
-echo "LANG=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
-echo "LC_ALL=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LANGUAGE=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LANG=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LC_ALL=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 
 read -p "==> Whats the name of your custom user? " custom_user
 if [ -z "${custom_user}" ]; then
@@ -150,9 +156,9 @@ apt-get upgrade -y
 # 8. enable auto security updates
 echo "(8) update mechanisms"
 echo "Q: enable security updates? [y,N] "
-read -p " [y]" enableSecurityUpdates
+read -p " [y] " enableSecurityUpdates
 enableSecurityUpdates=${enableSecurityUpdates:-"y"}
-if [ ${enableSecurityUpdates} == "y" ]; then
+if [ "${enableSecurityUpdates}" = "y" ]; then
     apt-get install unattended-upgrades -y
     dpkg-reconfigure --priority=low unattended-upgrades
 fi
@@ -178,16 +184,15 @@ else
 fi
 sed "s/^ *IPV6 .*/IPV6=yes/i" -i /etc/default/ufw
 ufw disable
-ufw enable
 ufw allow ${SSH_PORT}/tcp
-
 echo "Q: open web ports (80,443)? [N,y]"
-read -p " [y]" openWebPorts
+read -p " [y] " openWebPorts
 openWebPorts=${openWebPorts:-"y"}
-if [ ${openWebPorts} == "y" ]; then
+if [ "${openWebPorts}" = "y" ]; then
     ufw allow 80/tcp
     ufw allow 443/tcp
 fi
+ufw enable
 
 
 echo "==> finishing up"
@@ -204,4 +209,4 @@ echo " ===> eventually revisiting /etc/ssh/sshd_conf"
 echo " ===> reconnect via ssh with ${ROOT_USER_ALTERNATIVE} to test, if everything"
 echo "      is in place and works great"
 echo " ===> install tools like logwatch, fail2ban, (logrotate, upstart)"
-echo "################################################################################"
+#echo "################################################################################"
