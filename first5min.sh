@@ -51,6 +51,8 @@ echo "(2) create new users"
 echo "==> ${ROOT_USER_ALTERNATIVE}: "
 adduser "${ROOT_USER_ALTERNATIVE}" --shell /bin/bash --gecos ""
 echo "" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LANGUAGE=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LANG=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LC_ALL=en_US.UTF-8" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 
 read -p "==> Whats the name of your custom user? " custom_user
@@ -145,18 +147,29 @@ apt-get update
 apt-get upgrade -y
 
 
+# 8. enable auto security updates
+echo "(8) update mechanisms"
+echo "Q: enable security updates? [y,N] "
+read -p " [y]" enableSecurityUpdates
+enableSecurityUpdates=${enableSecurityUpdates:-"y"}
+if [ ${enableSecurityUpdates} == "y" ]; then
+    apt-get install unattended-upgrades -y
+    dpkg-reconfigure --priority=low unattended-upgrades
+fi
+
+
 # 8. install some important packages
-echo "(8) installing some important packages"
+echo "(9) installing some important packages"
 apt-get install -y git-core
 
 
 # 9. configure language encoding
-echo "(9) configure language encoding"
+echo "(10) configure language encoding"
 locale-gen UTF-8
 
 
 # 9. setting some defaults on the firewall
-echo "(10) initial firewall configurations and enableing"
+echo "(11) initial firewall configurations and enableing"
 ufw status | grep inactive &> /dev/null
 if [ $? = 0 ]; then
     echo "WARNING: ufw is not enabled."
@@ -167,8 +180,14 @@ sed "s/^ *IPV6 .*/IPV6=yes/i" -i /etc/default/ufw
 ufw disable
 ufw enable
 ufw allow ${SSH_PORT}/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
+
+echo "Q: open web ports (80,443)? [N,y]"
+read -p " [y]" openWebPorts
+openWebPorts=${openWebPorts:-"y"}
+if [ ${openWebPorts} == "y" ]; then
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+fi
 
 
 echo "==> finishing up"
