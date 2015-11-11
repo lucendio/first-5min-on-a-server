@@ -40,6 +40,7 @@ if [ $(id -u) -eq 0 ]; then
     export LANGUAGE=${LANG_SET}
     export LANG=${LANG_SET}
     export LC_ALL=${LANG_SET}
+    export LC_CTYPE=${LANG_SET}
     locale-gen ${LANG_SET}
 else
     echo "TODO: switch to root and try to run this script again (-> aborted)"
@@ -60,6 +61,7 @@ echo "" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LANGUAGE=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LANG=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LC_ALL=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
+echo "LC_CTYPE=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 
 read -p "==> Whats the name of your custom user? " custom_user
 if [ -z "${custom_user}" ]; then
