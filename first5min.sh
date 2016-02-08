@@ -19,8 +19,8 @@ SSHD_CONFIG="/etc/ssh/sshd_config"
                               #  GROUNDWORK #
                               # # # # # # # #
 
-### 1. go into root mode: 'su root' or'sudo -i'
-### 2. make sure, the root user has a password and you know it. if not: 'passwd'
+### 1. Go into root mode: 'su root' or 'sudo -i'
+### 2. Make sure the root user has a password and you know it. If not: 'passwd'
 ################################################################################
 
 
@@ -63,15 +63,15 @@ echo "LANG=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LC_ALL=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 echo "LC_CTYPE=${LANG_SET}" >> /home/${ROOT_USER_ALTERNATIVE}/.profile
 
-read -p "==> Whats the name of your custom user? " custom_user
+read -p "==> What's the name of your custom user? " custom_user
 if [ -z "${custom_user}" ]; then
-    read -p "Thats not a valid user name! last chance: " custom_user
+    read -p "That's not a valid user name! Last chance: " custom_user
 fi
 
 if [ ! -z "${custom_user}" ]; then
     adduser ${custom_user} --shell /bin/bash --disabled-password --gecos ""
 else
-    echo "Wrong input. Script will terminate immediatlly"
+    echo "Wrong input. Script will terminate immediately"
     exit 0
 fi
 [ -d /home/${custom_user}/.ssh ] || mkdir /home/${custom_user}/.ssh
@@ -96,13 +96,13 @@ echo "${ROOT_USER_ALTERNATIVE} ALL=(ALL) ALL" >> /etc/sudoers
 
 
 # 5. adding public ssh keys to authorized_keys of superuser
-echo "(5) add your public key to ${ROOT_USER_ALTERNATIVE} s authorized_keys -file"
+echo "(5) add your public key to ${ROOT_USER_ALTERNATIVE}'s authorized_keys file"
 [ -d /home/${ROOT_USER_ALTERNATIVE}/ ] || mkdir /home/${ROOT_USER_ALTERNATIVE}/
 [ -d /home/${ROOT_USER_ALTERNATIVE}/.ssh ] || mkdir /home/${ROOT_USER_ALTERNATIVE}/.ssh
 [ -e /home/${ROOT_USER_ALTERNATIVE}/.ssh/authorized_keys ] || touch /home/${ROOT_USER_ALTERNATIVE}/.ssh/authorized_keys
 read -p "c/p your public key in here ==> " pub_key
 if [ -z "${pub_key}" ]; then
-    echo "its no valid input. adding aborted. please append your key manually into '/home/${ROOT_USER_ALTERNATIVE}/.ssh/authorized_keys' after this script"
+    echo "This is not a valid input. Adding aborted. Please append your key manually into '/home/${ROOT_USER_ALTERNATIVE}/.ssh/authorized_keys' after this script"
 else
     echo ${pub_key} >> /home/${ROOT_USER_ALTERNATIVE}/.ssh/authorized_keys
 fi
@@ -145,25 +145,25 @@ fi
 
 echo "...reload ssh changed configs"
 /etc/init.d/ssh reload
-echo "...restrikting 'su'-command"
+echo "...restricting 'su'-command"
 dpkg-statoverride --update --add root admins 4750 /bin/su
 
 
 # 7. updating the operating system
-echo "(7) update the OS [currently ubuntu]"
+echo "(7) update the OS [currently Ubuntu]"
 apt-get update
 apt-get upgrade -y
 
 
 # 8. enable auto security updates
 echo "(8) update mechanisms"
-echo "Q: enable security updates? [y,N] "
-read -p " [y] " enableSecurityUpdates
-enableSecurityUpdates=${enableSecurityUpdates:-"y"}
-if [ "${enableSecurityUpdates}" = "y" ]; then
-    apt-get install unattended-upgrades -y
-    dpkg-reconfigure --priority=low unattended-upgrades
-fi
+read -r -p "Q: enable security updates? [y/N] " enableSecurityUpdates
+case $enableSecurityUpdates in
+    [yY][eE][sS]|[yY]|"" )
+        apt-get install unattended-upgrades -y
+        dpkg-reconfigure --priority=low unattended-upgrades
+    ;;
+esac
 
 
 # 8. install some important packages
@@ -177,23 +177,23 @@ locale-gen UTF-8
 
 
 # 9. setting some defaults on the firewall
-echo "(11) initial firewall configurations and enableing"
+echo "(11) initial firewall configurations and enabling"
 ufw status | grep inactive &> /dev/null
 if [ $? = 0 ]; then
     echo "WARNING: ufw is not enabled."
 else
-    echo "...utw in enabled. everthing is fine"
+    echo "...ufw is enabled. Everthing is fine"
 fi
 sed "s/^ *IPV6 .*/IPV6=yes/i" -i /etc/default/ufw
 ufw disable
 ufw allow ${SSH_PORT}/tcp
-echo "Q: open web ports (80,443)? [N,y]"
-read -p " [y] " openWebPorts
-openWebPorts=${openWebPorts:-"y"}
-if [ "${openWebPorts}" = "y" ]; then
-    ufw allow 80/tcp
-    ufw allow 443/tcp
-fi
+read -r -p "Q: open web ports (80,443)? [y/N] " openWebPorts
+case $openWebPorts in
+    [yY][eE][sS]|[yY]|"" )
+        ufw allow 80/tcp
+        ufw allow 443/tcp
+    ;;
+esac
 ufw enable
 
 
