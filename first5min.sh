@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env /bin/sh
 
 ################################################################################
                               #   CONFIGS   #
@@ -136,16 +136,22 @@ if [ ! -z "${pub_key}" ]; then
 
     grep -q "${sshConfigProperty}" ${SSHD_CONFIG}
     if [ $? -eq 0 ]; then # FOUND
-        sed "s/^.*${sshConfigProperty}.*/PasswordAuthentication no/i" -i ${SSHD_CONFIG}
+        sed -i -E -e "s/^#?${sshConfigProperty} (no|yes){1}$/PasswordAuthentication no/g" ${SSHD_CONFIG}
     else
         echo "" >> ${SSHD_CONFIG}
         echo "PasswordAuthentication no" >> ${SSHD_CONFIG}
     fi
 fi
 
+echo "
+# keep alive 1 hour
+ClientAliveInterval 120
+ClientAliveCountMax 30" >> ${SSHD_CONFIG}
+
+
 echo "...reload ssh changed configs"
 /etc/init.d/ssh reload
-echo "...restrikting 'su'-command"
+echo "...restricting 'su'-command"
 dpkg-statoverride --update --add root admins 4750 /bin/su
 
 
@@ -177,12 +183,13 @@ locale-gen UTF-8
 
 
 # 9. setting some defaults on the firewall
+command -v ufw >/dev/null 2>&1 || apt-get -y install ufw
 echo "(11) initial firewall configurations and enableing"
 ufw status | grep inactive &> /dev/null
 if [ $? = 0 ]; then
     echo "WARNING: ufw is not enabled."
 else
-    echo "...utw in enabled. everthing is fine"
+    echo "...utw in enabled. everything is fine"
 fi
 sed "s/^ *IPV6 .*/IPV6=yes/i" -i /etc/default/ufw
 ufw disable
@@ -210,5 +217,26 @@ echo " "
 echo " ===> eventually revisiting /etc/ssh/sshd_conf"
 echo " ===> reconnect via ssh with ${ROOT_USER_ALTERNATIVE} to test, if everything"
 echo "      is in place and works great"
-echo " ===> install tools like logwatch, fail2ban, (logrotate, upstart)"
-#echo "################################################################################"
+echo " ===> install tools like logwatch, fail2ban, etc"
+echo "################################################################################"
+
+
+echo "(12) machine configurations"
+echo "Q: change hostname ($(hostname))? [...,N] "
+read -p " [N] " newHostname
+changeHostname=${newHostname:-"N"}
+if [ "${changeHostname}" != "N" ]; then
+    echo ${changeHostname}"" > /etc/hostname
+    # TODO: find and replace in/etc/hosts
+fi
+
+
+echo "(13) all done..."
+echo "Q: Do you want to reboot the machine? [y,N] "
+read -p " [y] " restartRequired
+restartRequired=${restartRequired:-"y"}
+if [ "${restartRequired}" = "y" ]; then
+    reboot
+fi
+
+exit 0
